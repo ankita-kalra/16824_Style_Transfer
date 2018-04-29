@@ -84,10 +84,10 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
             # Iterate over data.
             for inputs, labels in dataloaders[phase]:
-                print(inputs.shape)
-                print(inputs.shape)
-                inputs = inputs
-                labels = labels
+                #print(inputs.shape)
+                #print(inputs.shape)
+                inputs = inputs.cuda()
+                labels = labels.cuda()
                 inputs = Variable(inputs)
                 labels = Variable(labels)
                 #print(labels)
@@ -203,7 +203,7 @@ augmented_model = nn.Sequential(
 
 print("initialized final layer")
 
-#smallnet_model = smallnet_model.cuda()
+smallnet_model = smallnet_model.cuda()
 
 criterion = nn.CrossEntropyLoss()
 
