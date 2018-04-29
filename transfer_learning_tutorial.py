@@ -51,6 +51,11 @@ inputs, classes = next(iter(dataloaders['train']))
 # Make a grid from batch
 out = torchvision.utils.make_grid(inputs)
 
+class Flatten(nn.Module):
+    def forward(self, x):
+        N, C, H, W = x.size() # read in N, C, H, W
+        return x.view(N, -1)  # "flatten" the C * H * W values into a single vector per image
+
 
 def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
     since = time.time()
@@ -143,6 +148,7 @@ smallnet_model = nn.Sequential(
 	nn.ReLU(inplace=True),
 	nn.BatchNorm2d(32),
 	nn.MaxPool2d(2,stride=2),
+	Flatten(),
 	#nn.Linear(6784,53),
 	#nn.Dropout(0.5),
 	#nn.Linear(513,2)
