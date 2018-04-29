@@ -95,11 +95,11 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
                 # forward
                 # track history if only in train
-                # with torch.set_grad_enabled(phase == 'train'):
+                with torch.set_grad_enabled(phase == 'train'):
                 ###  commenting out
-                #outputs = model(inputs)
+                    outputs = model(inputs)
                 ### 
-                outputs = model(inputs)
+                #outputs = model(inputs)
 
                 _, preds = torch.max(outputs, 1)
                 #print(preds)
@@ -203,6 +203,7 @@ augmented_model = nn.Sequential(
 print("initialized final layer")
 
 smallnet_model = smallnet_model.cuda()
+smallnet_model = Variable(smallnet_model)
 
 criterion = nn.CrossEntropyLoss()
 
