@@ -17,8 +17,6 @@ from torch.autograd import Variable
 
 data_transforms = {
     'train': transforms.Compose([
-        # transforms.RandomResizedCrop(224),
-        # transforms.RandomHorizontalFlip(),
         transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
@@ -36,7 +34,7 @@ data_dir = 'SunData'
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'val']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=1,
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=2,
                                              shuffle=True, num_workers=4)
               for x in ['train', 'val']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
@@ -96,9 +94,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
                 # forward
                 # track history if only in train
-            #    with torch.set_grad_enabled(phase == 'train'):
+                with torch.set_grad_enabled(phase == 'train'):
                 ###  commenting out
-                outputs = model(inputs)
+                    outputs = model(inputs)
                 ### 
                 #outputs = model(inputs)
                 #print('labels',labels)
