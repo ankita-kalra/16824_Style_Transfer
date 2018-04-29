@@ -40,6 +40,7 @@ dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=1,
                                              shuffle=True, num_workers=4)
               for x in ['train', 'val']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
+print(dataset_sizes)
 class_names = image_datasets['train'].classes
 
 print("Data loaded")
@@ -95,15 +96,17 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
                 # forward
                 # track history if only in train
-                with torch.set_grad_enabled(phase == 'train'):
+            #    with torch.set_grad_enabled(phase == 'train'):
                 ###  commenting out
-                    outputs = model(inputs)
+                outputs = model(inputs)
                 ### 
                 #outputs = model(inputs)
-
+                print(labels)
+                print(outputs)
                 _, preds = torch.max(outputs, 1)
-                #print(preds)
+                print(preds)
                 loss = criterion(outputs, labels)
+                print(loss)
 
                     # backward + optimize only if in training phase
                 if phase == 'train':
@@ -111,12 +114,14 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                     optimizer.step()
 
                 # statistics
+                print(loss[0])
                 running_loss += loss[0] * inputs.size(0)
 
                 # print(type(preds))
                 # print(type(labels.data))
                 # print(preds.cpu() == labels.data.cpu())
                 running_corrects += torch.sum(preds == labels)
+                print(running_corrects)
 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
@@ -203,7 +208,7 @@ augmented_model = nn.Sequential(
 print("initialized final layer")
 
 smallnet_model = smallnet_model.cuda()
-smallnet_model = Variable(smallnet_model)
+#smallnet_model = Variable(smallnet_model)
 
 criterion = nn.CrossEntropyLoss()
 
