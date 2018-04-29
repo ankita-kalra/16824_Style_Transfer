@@ -101,12 +101,12 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 outputs = model(inputs)
                 ### 
                 #outputs = model(inputs)
-                print('labels',labels)
+                #print('labels',labels)
                 print('outputs',outputs)
                 _, preds = torch.max(outputs, 1)
-                print('preds',preds)
+                #print('preds',preds)
                 loss = criterion(outputs, labels)
-                print(loss)
+                print('loss'+loss)
 
                     # backward + optimize only if in training phase
                 if phase == 'train':
@@ -115,8 +115,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
                 # statistics
                 print('loss0',loss[0])
-                running_loss += loss[0] * inputs.size(0)
-
+                running_loss += loss[0] 
+                print('running_loss',running_loss)
                 # print(type(preds))
                 # print(type(labels.data))
                 # print(preds.cpu() == labels.data.cpu())
