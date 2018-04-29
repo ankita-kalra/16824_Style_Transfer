@@ -114,9 +114,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                     optimizer.step()
 
                 # statistics
-                print('loss0',loss[0])
-                running_loss += loss[0] 
-                print('running_loss',running_loss)
+                #print('loss0',loss[0])
+                running_loss += loss 
+                #print('running_loss',running_loss)
                 # print(type(preds))
                 # print(type(labels.data))
                 # print(preds.cpu() == labels.data.cpu())
@@ -125,6 +125,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
+            print("epoch_acc",epoch_acc)
+            print("epoch_loss",epoch_loss)
+
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
