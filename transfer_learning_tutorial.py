@@ -36,11 +36,11 @@ data_dir = 'SunData'
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'val']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=1,
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=2,
                                              shuffle=True, num_workers=4)
               for x in ['train', 'val']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
-print(dataset_sizes)
+print('dataset_sizes',dataset_sizes)
 class_names = image_datasets['train'].classes
 
 print("Data loaded")
@@ -101,10 +101,10 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 outputs = model(inputs)
                 ### 
                 #outputs = model(inputs)
-                print(labels)
-                print(outputs)
+                print('labels',labels)
+                print('outputs',outputs)
                 _, preds = torch.max(outputs, 1)
-                print(preds)
+                print('preds',preds)
                 loss = criterion(outputs, labels)
                 print(loss)
 
@@ -114,14 +114,14 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                     optimizer.step()
 
                 # statistics
-                print(loss[0])
+                print('loss0',loss[0])
                 running_loss += loss[0] * inputs.size(0)
 
                 # print(type(preds))
                 # print(type(labels.data))
                 # print(preds.cpu() == labels.data.cpu())
                 running_corrects += torch.sum(preds == labels)
-                print(running_corrects)
+                print('running_corrects',running_corrects)
 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
