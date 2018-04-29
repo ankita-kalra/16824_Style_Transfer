@@ -68,8 +68,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
         
-        #dummy variable to check
-        x = torch.randn(4, 3, 224, 224).type(dtype)
 
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
@@ -167,13 +165,14 @@ smallnet_model = nn.Sequential(
 	nn.Linear(53,5)
 )
 
-
 dtype = torch.FloatTensor
+'''
 x = torch.randn(4, 3, 224, 224).type(dtype)
 x_var = Variable(x).type(dtype)
 outputs = smallnet_model(x_var)
 print(outputs.shape)
 print(outputs)
+'''
 
 '''
 print("Pretrained model collected.")
