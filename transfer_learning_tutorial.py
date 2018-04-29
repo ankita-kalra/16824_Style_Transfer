@@ -84,7 +84,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 labels = labels
                 inputs = Variable(inputs)
                 labels = Variable(labels)
-
+                #print(labels)
+                
                 # zero the parameter gradients
                 optimizer.zero_grad()
 
@@ -93,6 +94,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 # with torch.set_grad_enabled(phase == 'train'):
                 outputs = model(inputs)
                 _, preds = torch.max(outputs, 1)
+                #print(preds)
                 loss = criterion(outputs, labels)
 
                     # backward + optimize only if in training phase
@@ -102,6 +104,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
                 # statistics
                 running_loss += loss[0] * inputs.size(0)
+
                 # print(type(preds))
                 # print(type(labels.data))
                 # print(preds.cpu() == labels.data.cpu())
@@ -151,7 +154,7 @@ smallnet_model = nn.Sequential(
 	Flatten(),
 	nn.Linear(89888,53),
 	nn.Dropout(0.5),
-	nn.Linear(53,2)
+	nn.Linear(53,5)
 )
 
 
@@ -160,6 +163,7 @@ x = torch.randn(4, 3, 224, 224).type(dtype)
 x_var = Variable(x).type(dtype)
 outputs = smallnet_model(x_var)
 print(outputs.shape)
+print(outputs)
 
 '''
 print("Pretrained model collected.")
@@ -208,4 +212,4 @@ print("Hyperparameters set, beginning training.")
 # minute.
 #
 
-#smallnet_model = train_model(smallnet_model, criterion, optimizer_ft, exp_lr_scheduler,num_epochs=50)
+smallnet_model = train_model(smallnet_model, criterion, optimizer_ft, exp_lr_scheduler,num_epochs=50)
