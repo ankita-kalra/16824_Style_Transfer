@@ -106,7 +106,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 _, preds = torch.max(outputs, 1)
                 #print('preds',preds)
                 loss = criterion(outputs, labels)
-                print('loss',loss)
+                #print('loss',loss)
 
                     # backward + optimize only if in training phase
                 if phase == 'train':
@@ -121,7 +121,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 # print(type(labels.data))
                 # print(preds.cpu() == labels.data.cpu())
                 running_corrects += torch.sum(preds == labels)
-                print('running_corrects',running_corrects)
+                #print('running_corrects',running_corrects)
 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
