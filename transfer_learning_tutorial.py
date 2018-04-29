@@ -149,9 +149,9 @@ smallnet_model = nn.Sequential(
 	nn.BatchNorm2d(32),
 	nn.MaxPool2d(2,stride=2),
 	Flatten(),
-	#nn.Linear(6784,53),
-	#nn.Dropout(0.5),
-	#nn.Linear(513,2)
+	nn.Linear(89888,53),
+	nn.Dropout(0.5),
+	nn.Linear(53,2)
 )
 
 
