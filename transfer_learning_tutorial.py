@@ -158,6 +158,13 @@ smallnet_model = nn.Sequential(
 	#nn.Linear(513,2)
 )
 
+
+dtype = torch.FloatTensor
+x = torch.randn(4, 3, 224, 224).type(dtype)
+x_var = Variable(x).type(dtype)
+outputs = smallnet_model(x_var)
+print(outputs.shape)
+
 '''
 print("Pretrained model collected.")
 num_ftrs = model_ft.fc.in_features
@@ -205,5 +212,4 @@ print("Hyperparameters set, beginning training.")
 # minute.
 #
 
-smallnet_model = train_model(smallnet_model, criterion, optimizer_ft, exp_lr_scheduler,
-                       num_epochs=50)
+#smallnet_model = train_model(smallnet_model, criterion, optimizer_ft, exp_lr_scheduler,num_epochs=50)
