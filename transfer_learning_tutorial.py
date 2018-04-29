@@ -62,10 +62,14 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
+    dtype = torch.FloatTensor
 
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
+        
+        #dummy variable to check
+        x = torch.randn(4, 3, 224, 224).type(dtype)
 
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
@@ -80,6 +84,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
             # Iterate over data.
             for inputs, labels in dataloaders[phase]:
+                print(inputs.shape)
+                print(inputs.shape)
                 inputs = inputs
                 labels = labels
                 inputs = Variable(inputs)
@@ -92,7 +98,11 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 # forward
                 # track history if only in train
                 # with torch.set_grad_enabled(phase == 'train'):
-                outputs = model(inputs)
+                ###  commenting out
+                #outputs = model(inputs)
+                ### 
+                outputs = model(x)
+
                 _, preds = torch.max(outputs, 1)
                 #print(preds)
                 loss = criterion(outputs, labels)
