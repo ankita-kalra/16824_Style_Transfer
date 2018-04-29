@@ -203,7 +203,7 @@ augmented_model = nn.Sequential(
 print("initialized final layer")
 
 smallnet_model = smallnet_model.cuda()
-smallnet_model = Variable(smallnet_model)
+#smallnet_model = Variable(smallnet_model)
 
 criterion = nn.CrossEntropyLoss()
 
