@@ -8,12 +8,14 @@ import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
 import matplotlib
-matplotlib.use('TkAgg') 
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import time
 import os
 import copy
 from torch.autograd import Variable
+from neural_style import  *
+from dataloader import *
 
 data_transforms = {
     'train': transforms.Compose([
@@ -31,18 +33,14 @@ data_transforms = {
 }
 
 data_dir = 'SunData'
-image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
-                                          data_transforms[x])
-                  for x in ['train', 'val']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=2,
-                                             shuffle=True, num_workers=4)
-              for x in ['train', 'val']}
-dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
-print('dataset_sizes',dataset_sizes)
-class_names = image_datasets['train'].classes
-
+image_datasets = {}
+image_datasets['train'] = TrainLoader(os.path.join(data_dir, 'train'), data_transforms['train'])
+image_datasets['val'] = TestLoader(os.path.join(data_dir, 'val'), data_transforms['val'])
 print("Data loaded")
 
+# # desired depth layers to compute style/content losses :
+# content_layers_default = ['conv_4']
+# style_layers_default = ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']
 
 # Get a batch of training data
 inputs, classes = next(iter(dataloaders['train']))
@@ -55,87 +53,122 @@ class Flatten(nn.Module):
         N, C, H, W = x.size() # read in N, C, H, W
         return x.view(N, -1)  # "flatten" the C * H * W values into a single vector per image
 
-
-def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
+def train_model(model_smallnet, model_augnet, criterion, optimizer_smallnet, optimizer_augnet, scheduler, num_epochs=30):
     since = time.time()
 
-    best_model_wts = copy.deepcopy(model.state_dict())
+    best_model_wts_smallnet = copy.deepcopy(model_smallnet.state_dict())
+    best_model_wts_augnet = copy.deepcopy(model_augnet.state_dict())
     best_acc = 0.0
     dtype = torch.FloatTensor
 
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
+
+        # Step 1: Train both the small net and augnet.
+
+        scheduler.step()
+        '''
+        # ------------------
+        #      PHASE 1
+        # ------------------
+
+        model_smallnet.train()
+
+        for input1, input2, labels in dataloaders['train']:
+
+            labels = labels.cuda()
+            labels = Variable(labels)
+
+            inputs = run_style_transfer(input1, input2, input1.clone())
+
+            optimizer_smallnet.zero_grad()
+
+            with torch.set_grad_enabled(phase == 'train'):
+                outputs = model_smallnet(inputs)
+                _, preds = torch.max(outputs, 1)
+                loss.backward()
+                optimizer_smallnet.step()
+
+         '''
+        # ------------------
+        #      PHASE 2
+        # ------------------
+
+        model_smallnet.train()
+        model_augnet.train()
+
+        running_loss = 0.0
+        running_corrects = 0
+
+        for input1, input2, labels in dataloaders['train']:
+            inp1 = input1.numpy()
+            inp2 = input2.numpy()
+            inputs = np.vstack((inp1, inp2))
+            inputs = torch.from_numpy(inputs)
+            inputs = inputs.cuda()
+            labels = labels.cuda()
+            inputs = Variable(inputs)
+            labels = Variable(labels)
+
+            optimizer_smallnet.zero_grad()
+            optimizer_augnet.zero_grad()
+
+            with torch.set_grad_enabled(phase == 'train'):
+                outputs = model_augnet(inputs)
+                outputs = model_smallnet(outputs)
+                _, preds = torch.max(outputs, 1)
+                loss.backward()
+                optimizer_smallnet.step()
+                optimizer_augnet.step()
+                running_loss += loss
+                running_corrects += torch.sum(preds == labels)
+
+        epoch_loss = running_loss / dataset_sizes[phase]
+        epoch_acc = running_corrects.double() / dataset_sizes[phase]
+
+        print("PHASE 2:")
+        print("loss", epoch_loss)
+        print("accuracy", epoch_acc)
         
 
-        # Each epoch has a training and validation phase
-        for phase in ['train', 'val']:
-            if phase == 'train':
-                scheduler.step()
-                model.train()  # Set model to training mode
-            else:
-                model.eval()   # Set model to evaluate mode
+        # ------------------
+        #      PHASE 3
+        # ------------------
+        '''
 
-            running_loss = 0.0
-            running_corrects = 0
+        model_smallnet.eval()
 
-            # Iterate over data.
-            for inputs, labels in dataloaders[phase]:
-                #print(inputs.shape)
-                #print(inputs.shape)
-                inputs = inputs.cuda()
-                labels = labels.cuda()
-                inputs = Variable(inputs)
-                labels = Variable(labels)
-                #print(labels)
-                
-                # zero the parameter gradients
-                optimizer.zero_grad()
+        running_loss = 0.0
+        running_corrects = 0
 
-                # forward
-                # track history if only in train
-                with torch.set_grad_enabled(phase == 'train'):
-                ###  commenting out
-                    outputs = model(inputs)
-                ### 
-                #outputs = model(inputs)
-                #print('labels',labels)
-                #print('outputs',outputs)
-                _, preds = torch.max(outputs, 1)
-                #print('preds',preds)
-                loss = criterion(outputs, labels)
-                #print('loss',loss)
+        for inputs, labels in dataloaders['eval']:
+            inputs = inputs.cuda()
+            labels = labels.cuda()
+            inputs = Variable(inputs)
+            labels = Variable(labels)
 
-                    # backward + optimize only if in training phase
-                if phase == 'train':
-                    loss.backward()
-                    optimizer.step()
+            optimizer_smallnet.zero_grad()
 
-                # statistics
-                #print('loss0',loss[0])
-                running_loss += loss 
-                #print('running_loss',running_loss)
-                # print(type(preds))
-                # print(type(labels.data))
-                # print(preds.cpu() == labels.data.cpu())
-                running_corrects += torch.sum(preds == labels)
-                #print('running_corrects',running_corrects)
+            outputs = model_smallnet(inputs)
+            _, preds = torch.max(outputs, 1)
 
-            epoch_loss = running_loss / dataset_sizes[phase]
-            epoch_acc = running_corrects.double() / dataset_sizes[phase]
-            print("epoch_acc",epoch_acc)
-            print("epoch_loss",epoch_loss)
+            loss = criterion(outputs, labels)
 
+            running_loss += loss
+            running_corrects += torch.sum(preds == labels)
 
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                phase, epoch_loss, epoch_acc))
+        epoch_loss = running_loss / dataset_sizes[phase]
+        epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
-            # deep copy the model
-            if phase == 'val' and epoch_acc > best_acc:
-                best_acc = epoch_acc
-                best_model_wts = copy.deepcopy(model.state_dict())
-
-        print()
+        print("PHASE 3:")
+        print("loss", epoch_loss)
+        print("accuracy", epoch_acc)
+    '''
+    if epoch_acc > best_acc:
+        best_acc = epoch_acc
+        best_model_wts_augnet = copy.deepcopy(model_augnet.state_dict())
+        best_model_wts_smallnet = copy.deepcopy(model_smallnet.state_dict())
 
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
@@ -143,8 +176,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
     print('Best val Acc: {:4f}'.format(best_acc))
 
     # load best model weights
-    model.load_state_dict(best_model_wts)
-    return model
+    model_smallnet.load_state_dict(best_model_wts_smallnet)
+    model_augnet.load_state_dict(best_model_wts_augnet)
+    return model_smallnet, model_augnet
 
 
 # Load a pretrained model and reset final fully connected layer.
@@ -156,68 +190,47 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 # 3x3 Convolution
 
 smallnet_model = nn.Sequential(
-	nn.Conv2d(3,16,kernel_size=3,stride=1),
-	nn.ReLU(inplace=True),
-	nn.MaxPool2d(2,stride=2),
-	nn.Conv2d(16,32,kernel_size=3,stride=1),
-	nn.ReLU(inplace=True),
-	nn.Conv2d(32,32,kernel_size=3,stride=1),
-	nn.ReLU(inplace=True),
-	nn.BatchNorm2d(32),
-	nn.MaxPool2d(2,stride=2),
-	Flatten(),
-	nn.Linear(89888,53),
-	nn.Dropout(0.5),
-	nn.Linear(53,5)
+    nn.Conv2d(3,16,kernel_size=3,stride=1),
+    nn.ReLU(inplace=True),
+    nn.MaxPool2d(2,stride=2),
+    nn.Conv2d(16,32,kernel_size=3,stride=1),
+    nn.ReLU(inplace=True),
+    nn.Conv2d(32,32,kernel_size=3,stride=1),
+    nn.ReLU(inplace=True),
+    nn.BatchNorm2d(32),
+    nn.MaxPool2d(2,stride=2),
+    Flatten(),
+    nn.Linear(89888,53),
+    nn.Dropout(0.5),
+    nn.Linear(53,5)
 )
 
 dtype = torch.FloatTensor
-'''
-x = torch.randn(4, 3, 224, 224).type(dtype)
-x_var = Variable(x).type(dtype)
-outputs = smallnet_model(x_var)
-print(outputs.shape)
-print(outputs)
-'''
 
-'''
-print("Pretrained model collected.")
-num_ftrs = model_ft.fc.in_features
-model_ft.fc = nn.Linear(num_ftrs, 5)
-'''
-'''
-model_ft = models.alexnet(pretrained=True)
-#TODO - Augmentation Network
-print("Pretrained model collected.")
-num_ftrs = model_ft.fc.in_features
-model_ft.fc = nn.Linear(num_ftrs, 5)
-'''
-'''
 augmented_model = nn.Sequential(
-	nn.Conv2d(2,16,kernel_size=3,stride=1),
-	nn.ReLU(inplace=True),
-	nn.Conv2d(16,16,kernel_size=3,stride=1),
-	nn.ReLU(inplace=True),
-	nn.Conv2d(16,16,kernel_size=3,stride=1),
-	nn.ReLU(inplace=True),
-	nn.Conv2d(16,16,kernel_size=3,stride=1),
-	nn.Conv2d(16,3,kernel_size=3,stride=1)
-	)
-'''
-
+    nn.Conv2d(2,16,kernel_size=3,stride=1),
+    nn.ReLU(inplace=True),
+    nn.Conv2d(16,16,kernel_size=3,stride=1),
+    nn.ReLU(inplace=True),
+    nn.Conv2d(16,16,kernel_size=3,stride=1),
+    nn.ReLU(inplace=True),
+    nn.Conv2d(16,16,kernel_size=3,stride=1),
+    nn.Conv2d(16,3,kernel_size=3,stride=1)
+    )
 
 print("initialized final layer")
 
-smallnet_model = smallnet_model.cuda()
-#smallnet_model = Variable(smallnet_model)
+#smallnet_model = smallnet_model.cuda()
+#augmented_model = augmented_model.cuda()
 
 criterion = nn.CrossEntropyLoss()
 
 # Observe that all parameters are being optimized
-optimizer_ft = optim.SGD(smallnet_model.parameters(), lr=0.001, momentum=0.9)
+optimizer_smallnet = optim.SGD(smallnet_model.parameters(), lr=0.001, momentum=0.9)
+optimizer_augnet = optim.SGD(smallnet_model.parameters(), lr=0.001, momentum=0.9)
 
 # Decay LR by a factor of 0.1 every 7 epochs
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_smallnet, step_size=7, gamma=0.1)
 
 print("Hyperparameters set, beginning training.")
 ######################################################################
@@ -228,4 +241,4 @@ print("Hyperparameters set, beginning training.")
 # minute.
 #
 
-smallnet_model = train_model(smallnet_model, criterion, optimizer_ft, exp_lr_scheduler,num_epochs=50)
+smallnet_model, augnet_model = train_model(smallnet_model, augmented_model,criterion, optimizer_smallnet, optimizer_augnet,exp_lr_scheduler,num_epochs=50)
