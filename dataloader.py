@@ -143,7 +143,7 @@ class TestLoader(data.Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target
+        return img, img, target
 
 
     def __len__(self):

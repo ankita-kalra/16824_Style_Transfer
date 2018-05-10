@@ -18,8 +18,8 @@ def getRandomFilenames(path,class_number,num_files):
 
 class_names=['amusement_park','beach','highway','house','playground']
 num_files = 20
-phase = 'train//'
-dataset_filepath = "./SunData/train.txt"
+phase = 'train/'
+dataset_filepath = "./SunData/filenames.txt"
 path="./SunData/"
 
 for i in range(0,5):
